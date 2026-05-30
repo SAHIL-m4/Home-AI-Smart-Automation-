@@ -16,9 +16,6 @@
 
 > *"Set movie night mode"* → HomeAI dims lights, adjusts AC, closes curtains, turns on the TV, and suggests energy-saving actions — all from a single sentence.
 
-Built with **Claude claude-sonnet-4-20250514** (Anthropic) as the reasoning engine, HomeAI translates any free-form user request into a structured **JSON automation workflow**, which is then executed on a simulated device layer.
-
----
 
 ## 🎯 Stakeholders
 
