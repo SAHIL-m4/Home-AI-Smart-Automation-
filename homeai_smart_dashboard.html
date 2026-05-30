@@ -1,0 +1,531 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0f1e; color: #e2e8f0; min-height: 100vh; }
+
+  .app { display: grid; grid-template-rows: 56px 1fr; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: #0d1426; border-bottom: 1px solid #1e2d4a; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #06b6d4); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .logo-text { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; color: #f1f5f9; }
+  .logo-badge { font-size: 10px; background: #1e3a5f; color: #60a5fa; padding: 2px 7px; border-radius: 10px; font-weight: 600; letter-spacing: 0.5px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b98180; }
+  .status-label { font-size: 12px; color: #64748b; }
+  .time-display { font-size: 13px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+
+  /* MAIN GRID */
+  .main { display: grid; grid-template-columns: 280px 1fr 300px; gap: 0; height: calc(100vh - 56px); overflow: hidden; }
+
+  /* LEFT PANEL - DEVICES */
+  .left-panel { background: #0d1426; border-right: 1px solid #1e2d4a; overflow-y: auto; padding: 16px; }
+  .panel-title { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+  .device-card { background: #111827; border: 1px solid #1e2d4a; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+  .device-card:hover { border-color: #2563eb40; }
+  .device-card.active { border-color: #3b82f6; background: #1e2d4a; }
+  .device-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .device-name-row { display: flex; align-items: center; gap: 8px; }
+  .device-icon { font-size: 18px; }
+  .device-name { font-size: 13px; font-weight: 600; color: #cbd5e1; }
+  .device-status { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .device-status.on { background: #064e3b; color: #34d399; }
+  .device-status.off { background: #1e1e2e; color: #64748b; }
+
+  .device-detail { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .toggle-switch { position: relative; width: 36px; height: 20px; }
+  .toggle-switch input { display: none; }
+  .toggle-track { position: absolute; inset: 0; background: #334155; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+  .toggle-track.on { background: #3b82f6; }
+  .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; background: white; border-radius: 50%; transition: 0.2s; }
+  .toggle-thumb.on { transform: translateX(16px); }
+
+  /* MODE PRESETS */
+  .mode-section { margin-top: 20px; }
+  .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .preset-btn { background: #111827; border: 1px solid #1e2d4a; border-radius: 8px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.2s; color: inherit; font-family: inherit; }
+  .preset-btn:hover { border-color: #3b82f6; background: #1e2d4a; }
+  .preset-btn.active { border-color: #3b82f6; background: #1e3a5f; }
+  .preset-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+  .preset-name { font-size: 11px; color: #94a3b8; font-weight: 500; }
+
+  /* CENTER - CHAT */
+  .center-panel { display: flex; flex-direction: column; background: #0a0f1e; }
+  .chat-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  .msg { max-width: 85%; }
+  .msg.user { align-self: flex-end; }
+  .msg.ai { align-self: flex-start; }
+  .msg-bubble { padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; }
+  .msg.user .msg-bubble { background: #1e3a5f; color: #bfdbfe; border-bottom-right-radius: 4px; }
+  .msg.ai .msg-bubble { background: #111827; border: 1px solid #1e2d4a; color: #cbd5e1; border-bottom-left-radius: 4px; }
+  .msg-meta { font-size: 11px; color: #475569; margin-top: 4px; }
+  .msg.user .msg-meta { text-align: right; }
+
+  .json-block { background: #060a14; border: 1px solid #1e2d4a; border-radius: 8px; padding: 12px; margin-top: 10px; font-family: 'Courier New', monospace; font-size: 11.5px; line-height: 1.6; overflow-x: auto; }
+  .json-key { color: #60a5fa; }
+  .json-str { color: #34d399; }
+  .json-num { color: #fb923c; }
+  .json-bool { color: #a78bfa; }
+
+  .thinking { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #111827; border: 1px solid #1e2d4a; border-radius: 12px; border-bottom-left-radius: 4px; align-self: flex-start; }
+  .thinking-dots { display: flex; gap: 4px; }
+  .thinking-dot { width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; animation: bounce 1.2s infinite; }
+  .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+  .thinking-text { font-size: 12px; color: #64748b; }
+
+  .chat-input-area { padding: 16px 20px; background: #0d1426; border-top: 1px solid #1e2d4a; }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; }
+  .chat-input { flex: 1; background: #111827; border: 1px solid #1e2d4a; border-radius: 10px; padding: 10px 14px; color: #e2e8f0; font-size: 13.5px; font-family: inherit; resize: none; outline: none; min-height: 42px; max-height: 120px; line-height: 1.5; }
+  .chat-input:focus { border-color: #3b82f6; }
+  .chat-input::placeholder { color: #475569; }
+  .send-btn { background: #3b82f6; border: none; border-radius: 10px; width: 42px; height: 42px; cursor: pointer; color: white; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
+  .send-btn:hover { background: #2563eb; }
+  .send-btn:disabled { background: #1e2d4a; color: #475569; cursor: not-allowed; }
+
+  .suggestion-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .chip { background: #111827; border: 1px solid #1e2d4a; border-radius: 20px; padding: 5px 12px; font-size: 12px; color: #94a3b8; cursor: pointer; transition: all 0.15s; }
+  .chip:hover { border-color: #3b82f6; color: #60a5fa; background: #1e2d4a; }
+
+  /* RIGHT PANEL */
+  .right-panel { background: #0d1426; border-left: 1px solid #1e2d4a; overflow-y: auto; padding: 16px; }
+
+  .energy-meter { background: #111827; border: 1px solid #1e2d4a; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .meter-title { font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
+  .meter-value { font-size: 28px; font-weight: 700; color: #10b981; font-variant-numeric: tabular-nums; }
+  .meter-unit { font-size: 13px; color: #64748b; margin-left: 4px; }
+  .meter-bar { height: 6px; background: #1e2d4a; border-radius: 3px; margin-top: 10px; overflow: hidden; }
+  .meter-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #10b981, #3b82f6); transition: width 0.8s; }
+  .meter-label { font-size: 11px; color: #64748b; margin-top: 6px; }
+
+  .activity-feed { }
+  .activity-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #1e2d4a10; }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .activity-icon.success { background: #064e3b; }
+  .activity-icon.info { background: #1e3a5f; }
+  .activity-icon.warning { background: #451a03; }
+  .activity-text { font-size: 12px; color: #94a3b8; line-height: 1.5; }
+  .activity-time { font-size: 10px; color: #475569; margin-top: 2px; }
+
+  .tip-card { background: #0f2235; border: 1px solid #1e3a5f; border-radius: 10px; padding: 12px 14px; margin-top: 12px; }
+  .tip-header { font-size: 11px; color: #60a5fa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .tip-text { font-size: 12.5px; color: #94a3b8; line-height: 1.5; }
+
+  .welcome-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 40px 20px; }
+  .welcome-icon { font-size: 48px; margin-bottom: 16px; }
+  .welcome-title { font-size: 18px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
+  .welcome-sub { font-size: 13px; color: #64748b; line-height: 1.6; max-width: 320px; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1e2d4a; border-radius: 2px; }
+
+  .automation-badge { display: inline-flex; align-items: center; gap: 4px; background: #1e3a5f; border: 1px solid #3b82f640; border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #60a5fa; margin-bottom: 8px; font-weight: 600; }
+  .pulse { width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; animation: pulse-anim 1.5s infinite; }
+  @keyframes pulse-anim { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+  .exec-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; color: #94a3b8; }
+  .exec-check { color: #10b981; font-size: 14px; }
+  .exec-pending { color: #f59e0b; font-size: 14px; }
+</style>
+</head>
+<body>
+<h2 class="sr-only">HomeAI Smart Home Dashboard — control devices and send natural language commands to automate your home</h2>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🏠</div>
+      <span class="logo-text">HomeAI</span>
+      <span class="logo-badge">SAMSUNG PRISM</span>
+    </div>
+    <div class="header-right">
+      <div class="status-dot"></div>
+      <span class="status-label">7 devices online</span>
+      <span class="time-display" id="clock">--:--</span>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- LEFT: Devices -->
+    <div class="left-panel">
+      <div class="panel-title">Smart Devices</div>
+      <div id="device-list"></div>
+
+      <div class="mode-section">
+        <div class="panel-title" style="margin-top:4px">Quick Modes</div>
+        <div class="preset-grid" id="preset-grid"></div>
+      </div>
+    </div>
+
+    <!-- CENTER: Chat -->
+    <div class="center-panel">
+      <div class="chat-area" id="chat-area">
+        <div class="welcome-msg" id="welcome">
+          <div class="welcome-icon">✨</div>
+          <div class="welcome-title">HomeAI Assistant</div>
+          <div class="welcome-sub">Control your smart home with natural language. Try "Set movie night mode" or "Save electricity, nobody is home".</div>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <div class="suggestion-chips" id="chips"></div>
+        <div class="input-row">
+          <textarea class="chat-input" id="user-input" placeholder="Tell HomeAI what you need..." rows="1"></textarea>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Analytics -->
+    <div class="right-panel">
+      <div class="panel-title">Energy Monitor</div>
+      <div class="energy-meter">
+        <div class="meter-title">Current Usage</div>
+        <div><span class="meter-value" id="energy-val">2.4</span><span class="meter-unit">kWh</span></div>
+        <div class="meter-bar"><div class="meter-fill" id="energy-bar" style="width:38%"></div></div>
+        <div class="meter-label" id="energy-label">38% of daily budget</div>
+      </div>
+      <div class="energy-meter">
+        <div class="meter-title">Savings Today</div>
+        <div><span class="meter-value" id="savings-val" style="color:#f59e0b">₹0</span></div>
+        <div class="meter-bar"><div class="meter-fill" id="savings-bar" style="width:0%;background:linear-gradient(90deg,#f59e0b,#ef4444)"></div></div>
+        <div class="meter-label">Based on AI optimizations</div>
+      </div>
+
+      <div class="panel-title" style="margin-top:16px">Activity Log</div>
+      <div id="activity-log">
+        <div class="activity-item">
+          <div class="activity-icon info">🔌</div>
+          <div><div class="activity-text">System initialized</div><div class="activity-time">Just now</div></div>
+        </div>
+      </div>
+
+      <div class="tip-card" id="tip-card" style="display:none">
+        <div class="tip-header">💡 AI Energy Tip</div>
+        <div class="tip-text" id="tip-text"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEVICES = [
+  { id:'lights', name:'Lights', icon:'💡', on:true, detail:'Brightness: 80%', value:'80%' },
+  { id:'fan', name:'Fan', icon:'🌀', on:true, detail:'Speed: 60%', value:'60%' },
+  { id:'ac', name:'Air Conditioner', icon:'❄️', on:false, detail:'Temp: 24°C', value:'24°C' },
+  { id:'tv', name:'Smart TV', icon:'📺', on:false, detail:'Channel: Netflix', value:'Netflix' },
+  { id:'music', name:'Music System', icon:'🎵', on:false, detail:'Volume: 40%', value:'40%' },
+  { id:'door', name:'Door Lock', icon:'🔒', on:true, detail:'Status: Locked', value:'Locked' },
+  { id:'curtains', name:'Curtains', icon:'🪟', on:true, detail:'Position: Open', value:'Open' }
+];
+
+const PRESETS = [
+  { id:'movie', name:'Movie Night', icon:'🎬', prompt:'Set movie night mode' },
+  { id:'sleep', name:'Sleep Mode', icon:'🌙', prompt:'Prepare my bedroom for sleep' },
+  { id:'morning', name:'Good Morning', icon:'☀️', prompt:'Start my morning routine' },
+  { id:'energy', name:'Energy Saver', icon:'⚡', prompt:'Save electricity when nobody is home' },
+  { id:'work', name:'Work Mode', icon:'💼', prompt:'Set up home office work mode' },
+  { id:'romantic', name:'Romantic', icon:'🕯️', prompt:'Set romantic dinner ambiance' }
+];
+
+const SUGGESTIONS = [
+  'Set movie night mode',
+  'Good morning routine',
+  'Save electricity',
+  'Turn on AC at 22°C',
+  'Lock the house',
+  'Romantic dinner mode'
+];
+
+let deviceStates = {};
+DEVICES.forEach(d => { deviceStates[d.id] = { on: d.on, detail: d.detail }; });
+
+let savings = 0;
+let activePreset = null;
+let isThinking = false;
+
+function renderDevices() {
+  const list = document.getElementById('device-list');
+  list.innerHTML = DEVICES.map(d => {
+    const st = deviceStates[d.id];
+    return `<div class="device-card ${st.on ? 'active' : ''}" onclick="toggleDevice('${d.id}')">
+      <div class="device-header">
+        <div class="device-name-row">
+          <span class="device-icon">${d.icon}</span>
+          <div>
+            <div class="device-name">${d.name}</div>
+            <div class="device-detail">${st.detail}</div>
+          </div>
+        </div>
+        <div>
+          <div class="device-status ${st.on ? 'on' : 'off'}">${st.on ? 'ON' : 'OFF'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPresets() {
+  const grid = document.getElementById('preset-grid');
+  grid.innerHTML = PRESETS.map(p => `
+    <button class="preset-btn ${activePreset === p.id ? 'active' : ''}" onclick="handlePreset('${p.id}','${p.prompt}')">
+      <span class="preset-icon">${p.icon}</span>
+      <span class="preset-name">${p.name}</span>
+    </button>`).join('');
+}
+
+function renderChips() {
+  const chips = document.getElementById('chips');
+  chips.innerHTML = SUGGESTIONS.map(s => `<span class="chip" onclick="fillInput('${s}')">${s}</span>`).join('');
+}
+
+function toggleDevice(id) {
+  deviceStates[id].on = !deviceStates[id].on;
+  addActivity(deviceStates[id].on ? 'success' : 'info',
+    DEVICES.find(d=>d.id===id).icon + ' ' + DEVICES.find(d=>d.id===id).name + ' turned ' + (deviceStates[id].on ? 'ON' : 'OFF'));
+  renderDevices();
+}
+
+function handlePreset(id, prompt) {
+  activePreset = id;
+  renderPresets();
+  fillInput(prompt);
+  sendMessage();
+}
+
+function fillInput(text) {
+  const inp = document.getElementById('user-input');
+  inp.value = text;
+  inp.focus();
+}
+
+function addActivity(type, text) {
+  const log = document.getElementById('activity-log');
+  const icons = { success:'✅', info:'ℹ️', warning:'⚠️' };
+  const item = document.createElement('div');
+  item.className = 'activity-item';
+  item.innerHTML = `<div class="activity-icon ${type}">${icons[type]}</div>
+    <div><div class="activity-text">${text}</div><div class="activity-time">${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div></div>`;
+  log.insertBefore(item, log.firstChild);
+  if (log.children.length > 8) log.removeChild(log.lastChild);
+}
+
+function formatJSON(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json
+    .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
+    .replace(/: "([^"]+)"/g, ': <span class="json-str">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="json-num">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="json-bool">$1</span>');
+}
+
+function applyActions(parsed) {
+  if (!parsed.actions) return;
+  parsed.actions.forEach(a => {
+    const deviceMap = {
+      'lights': 'lights', 'ac': 'ac', 'fan': 'fan',
+      'smart tv': 'tv', 'tv': 'tv', 'music system': 'music', 'music': 'music',
+      'door lock': 'door', 'door': 'door', 'curtains': 'curtains'
+    };
+    const key = a.device.toLowerCase();
+    const did = deviceMap[key];
+    if (!did) return;
+    const dev = DEVICES.find(d => d.id === did);
+    if (a.action === 'Power') {
+      deviceStates[did].on = a.value === 'ON';
+    } else if (['Close','Lock'].includes(a.action)) {
+      deviceStates[did].on = true;
+    } else if (['Open','Unlock'].includes(a.action)) {
+      deviceStates[did].on = a.value !== 'Unlocked';
+    } else {
+      deviceStates[did].on = true;
+    }
+    deviceStates[did].detail = `${dev.name}: ${a.value}`;
+  });
+
+  const onCount = Object.values(deviceStates).filter(d => d.on).length;
+  const pct = Math.round((onCount / DEVICES.length) * 100);
+  document.getElementById('energy-val').textContent = (onCount * 0.35).toFixed(1);
+  document.getElementById('energy-bar').style.width = pct + '%';
+  document.getElementById('energy-label').textContent = pct + '% of daily budget';
+
+  if (parsed.mode && parsed.mode.toLowerCase().includes('energy')) {
+    savings += Math.floor(Math.random() * 30 + 15);
+    document.getElementById('savings-val').textContent = '₹' + savings;
+    document.getElementById('savings-bar').style.width = Math.min(savings / 2, 100) + '%';
+  }
+
+  if (parsed.energy_saving_tip) {
+    const card = document.getElementById('tip-card');
+    card.style.display = 'block';
+    document.getElementById('tip-text').textContent = parsed.energy_saving_tip;
+  }
+
+  renderDevices();
+}
+
+function appendMsg(role, content, jsonData, execLines) {
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  const area = document.getElementById('chat-area');
+  const msg = document.createElement('div');
+  msg.className = `msg ${role}`;
+
+  let html = `<div class="msg-bubble">${content}</div>`;
+
+  if (jsonData) {
+    html += `<div class="json-block">${formatJSON(jsonData)}</div>`;
+  }
+
+  if (execLines && execLines.length) {
+    html += `<div style="margin-top:10px;background:#060a14;border:1px solid #1e2d4a;border-radius:8px;padding:10px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Executing automation...</div>
+      ${execLines.map((l,i) => `<div class="exec-row" id="exec-${Date.now()}-${i}">
+        <span class="exec-pending">⏳</span> <span>${l}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  html += `<div class="msg-meta">${role === 'user' ? 'You' : 'HomeAI'} · ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>`;
+
+  msg.innerHTML = html;
+  area.appendChild(msg);
+  area.scrollTop = area.scrollHeight;
+
+  if (execLines) {
+    const rows = msg.querySelectorAll('.exec-row');
+    rows.forEach((row, i) => {
+      setTimeout(() => {
+        row.querySelector('.exec-pending').textContent = '✅';
+        row.querySelector('.exec-pending').className = 'exec-check';
+      }, 600 + i * 400);
+    });
+  }
+}
+
+function showThinking() {
+  const area = document.getElementById('chat-area');
+  const el = document.createElement('div');
+  el.id = 'thinking-el';
+  el.className = 'thinking';
+  el.innerHTML = `<div class="thinking-dots"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div><span class="thinking-text">HomeAI is thinking...</span>`;
+  area.appendChild(el);
+  area.scrollTop = area.scrollHeight;
+}
+
+function removeThinking() {
+  const el = document.getElementById('thinking-el');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  if (isThinking) return;
+  const inp = document.getElementById('user-input');
+  const text = inp.value.trim();
+  if (!text) return;
+
+  inp.value = '';
+  isThinking = true;
+  document.getElementById('send-btn').disabled = true;
+
+  appendMsg('user', text);
+  addActivity('info', '💬 ' + text.substring(0, 40) + (text.length > 40 ? '...' : ''));
+  showThinking();
+
+  const systemPrompt = `You are HomeAI, an intelligent Generative AI assistant for smart home automation.
+Your task is to understand natural-language home automation requests and convert them into structured automation actions.
+
+You control: Lights, Fan, Air Conditioner (AC), Smart TV, Music System, Door Lock, Curtains.
+
+Goals: Interpret intent accurately, generate smart automation workflows, optimize for comfort and energy efficiency.
+
+ALWAYS return ONLY valid JSON. No text outside JSON. Use this format:
+{
+  "mode": "name of automation mode",
+  "actions": [
+    { "device": "device name", "action": "action type", "value": "value/settings" }
+  ],
+  "energy_saving_tip": "short actionable suggestion"
+}
+
+Rules:
+- Use percentages for brightness/fan speed
+- Use Celsius for temperature (e.g., 22°C)
+- For moods (movie night, romantic, sleep), configure multiple devices intelligently
+- For energy saving, turn off non-essential devices
+- Always include an energy_saving_tip
+- Return ONLY JSON, nothing else`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+
+    const data = await resp.json();
+    removeThinking();
+
+    if (data.content && data.content[0]) {
+      let raw = data.content[0].text.trim();
+      raw = raw.replace(/```json|```/g, '').trim();
+
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch(e) {
+        appendMsg('ai', 'I understood your request but had trouble formatting the response. Please try again.');
+        isThinking = false;
+        document.getElementById('send-btn').disabled = false;
+        return;
+      }
+
+      const execLines = parsed.actions
+        ? parsed.actions.map(a => `${a.device} → ${a.action}: ${a.value}`)
+        : [];
+
+      const modeLabel = parsed.mode ? `<div class="automation-badge"><div class="pulse"></div>${parsed.mode} Mode Activated</div>` : '';
+      appendMsg('ai', modeLabel + 'Automation workflow generated and executing:', parsed, execLines);
+
+      applyActions(parsed);
+      addActivity('success', `✨ ${parsed.mode || 'Custom'} mode activated (${execLines.length} actions)`);
+    }
+  } catch(err) {
+    removeThinking();
+    appendMsg('ai', '⚠️ Connection error. Check your API access and try again.');
+  }
+
+  isThinking = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+document.getElementById('user-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+renderDevices();
+renderPresets();
+renderChips();
+updateClock();
+setInterval(updateClock, 30000);
+</script>
+</body>
+</html>
